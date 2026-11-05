@@ -1,7 +1,468 @@
 <!doctype html>
 <html lang="zh-CN">
 <head>
+<meta charset="utf-8"><!doctype html>
+<html lang="zh-CN">
+<head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="application-name" content="LLMflare-Anon">
+<meta name="theme-color" content="#06070b">
+<meta name="color-scheme" content="dark light">
+<title>LLMflare-Anon · 支持匿名上游的免费 LLM API 网关</title>
+<link rel="stylesheet" href="/tokens.css">
+<link rel="stylesheet" href="/styles.css">
+  <script>
+    /* 主题引导：在首帧渲染前确定主题，避免深浅切换时闪白/闪黑 */
+    (function () {
+      try {
+        var saved = localStorage.getItem("llm-anon-theme");
+        var theme = saved === "light" || saved === "dark"
+          ? saved
+          : (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+        document.documentElement.setAttribute("data-theme", theme);
+      } catch (err) {
+        document.documentElement.setAttribute("data-theme", "dark");
+      }
+    })();
+  </script>
+</head>
+<body>
+<div class="aurora" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+<div class="grain" aria-hidden="true"></div>
+
+<!-- ============ 登录门 ============ -->
+<section id="loginPanel" class="gate" hidden>
+  <button id="themeToggleGate" class="icon-btn gate-theme" type="button" title="切换深浅主题" aria-label="切换深浅主题" aria-pressed="false">
+      <svg class="theme-icon theme-icon--sun" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.1" stroke="currentColor" stroke-width="1.7"/><path d="M12 2.6v2.4M12 19v2.4M2.6 12h2.4M19 12h2.4M5.2 5.2l1.7 1.7M17.1 17.1l1.7 1.7M18.8 5.2l-1.7 1.7M6.9 17.1l-1.7 1.7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg><svg class="theme-icon theme-icon--moon" viewBox="0 0 24 24" fill="none"><path d="M20.5 14.3A8.4 8.4 0 0 1 9.7 3.5a8.6 8.6 0 1 0 10.8 10.8Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+  </button>
+  <div class="glass gate-card">
+    <header class="gate-head">
+      <span class="logo-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 2.6 3.4 7.3v9.4L12 21.4l8.6-4.7V7.3L12 2.6Z" stroke="currentColor" stroke-width="1.5"/><path d="M12 12.4 3.6 7.5M12 12.4l8.4-4.9M12 12.4v8.7" stroke="currentColor" stroke-width="1.5"/></svg>
+      </span>
+      <div>
+        <h1>LLMflare<span class="dim">-Anon</span></h1>
+        <p class="sub">免费 LLM API 聚合网关 · 控制台</p>
+      </div>
+    </header>
+
+    <!-- 账号登录 -->
+    <div id="loginStage">
+      <form id="loginForm" class="stack" novalidate>
+        <label class="field">
+          <span>账号</span>
+          <input id="loginUsername" type="text" autocomplete="username" spellcheck="false" placeholder="管理员账号" required>
+        </label>
+        <label class="field">
+          <span>密码</span>
+          <input id="loginPassword" type="password" autocomplete="current-password" placeholder="••••••••" required>
+        </label>
+        <label class="check">
+          <input id="loginRemember" type="checkbox" checked>
+          <span>保持登录 30 天</span>
+        </label>
+        <button class="btn btn--primary btn--block" type="submit">进入控制台</button>
+      </form>
+      <p id="loginHint" class="gate-hint"></p>
+      <button id="toBootstrap" class="linklike" type="button" hidden>首次使用？初始化管理员账号</button>
+    </div>
+
+    <!-- 首次建号 -->
+    <div id="bootstrapStage" hidden>
+      <p class="gate-note">首次初始化需要用部署时设置的 <code>ADMIN_TOKEN</code> 验证身份，随后即可用账号密码登录，无需再输入长令牌。</p>
+      <form id="bootstrapForm" class="stack" novalidate>
+        <label class="field">
+          <span>管理员账号</span>
+          <input id="bootstrapUsername" type="text" autocomplete="username" spellcheck="false" placeholder="3-32 位字母、数字或 . _ -" required>
+        </label>
+        <label class="field">
+          <span>设置密码</span>
+          <input id="bootstrapPassword" type="password" autocomplete="new-password" placeholder="至少 10 位，含两类字符" required>
+        </label>
+        <label class="field">
+          <span>ADMIN_TOKEN</span>
+          <input id="bootstrapToken" type="password" autocomplete="off" placeholder="wrangler secret 中设置的值" required>
+        </label>
+        <button class="btn btn--primary btn--block" type="submit">创建并登录</button>
+        <button id="toLogin" class="linklike" type="button">返回登录</button>
+      </form>
+      <p id="bootstrapHint" class="gate-hint" role="status" aria-live="polite"></p>
+    </div>
+
+    <footer class="gate-foot">
+      基于 <a href="https://github.com/Jiao77/LLMflare" target="_blank" rel="noreferrer">LLMflare</a>（MIT）二次开发
+    </footer>
+  </div>
+</section>
+
+<!-- ============ 主应用 ============ -->
+<div id="workspace" class="shell" hidden>
+  <aside class="sidebar glass" aria-label="主导航">
+    <div class="brand">
+      <span class="logo-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 2.6 3.4 7.3v9.4L12 21.4l8.6-4.7V7.3L12 2.6Z" stroke="currentColor" stroke-width="1.5"/><path d="M12 12.4 3.6 7.5M12 12.4l8.4-4.9M12 12.4v8.7" stroke="currentColor" stroke-width="1.5"/></svg>
+      </span>
+      <div class="brand-text">
+        <strong>LLMflare<span class="dim">-Anon</span></strong>
+        <small>Control Plane</small>
+      </div>
+    </div>
+    <nav class="nav">
+      <button class="nav-item is-active" data-view="overview" type="button">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M4 19V9m5 10V5m5 14v-7m5 7V8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        <span>用量总览</span>
+      </button>
+      <button class="nav-item" data-view="providers" type="button">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 3 3.8 7.5v9L12 21l8.2-4.5v-9L12 3Z" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="12" r="2.4" stroke="currentColor" stroke-width="1.7"/></svg>
+        <span>AI 提供商</span>
+      </button>
+      <button class="nav-item" data-view="keys" type="button">
+        <svg viewBox="0 0 24 24" fill="none"><circle cx="8.5" cy="12" r="3.6" stroke="currentColor" stroke-width="1.7"/><path d="M12.1 12H21m-3.4 0v3.2M14.5 12v2.6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        <span>客户端密钥</span>
+      </button>
+      <button class="nav-item" data-view="playground" type="button">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M5 6.5h14M5 12h9M5 17.5h11" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        <span>接口测试</span>
+      </button>
+      <button class="nav-item" data-view="settings" type="button">
+        <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.7"/><path d="M12 3.5v2.2M12 18.3v2.2M20.5 12h-2.2M5.7 12H3.5m12-6.4-1.6 1.5M10.1 16.9l-1.6 1.5m0-12.8 1.6 1.5m3.8 5.8 1.6 1.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        <span>账号安全</span>
+      </button>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="who">
+        <span class="avatar" id="avatarText">A</span>
+        <div>
+          <strong id="accountName">管理员</strong>
+          <small id="accountVia">会话登录</small>
+        </div>
+      </div>
+      <button id="logoutBtn" class="btn btn--ghost btn--sm btn--block" type="button">退出登录</button>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar glass">
+      <div class="topbar-title">
+        <h2 id="viewTitle">用量总览</h2>
+        <p id="viewSub">请求、Token 与延迟的实时观察</p>
+      </div>
+      <div class="topbar-actions">
+        <button id="themeToggleTop" class="icon-btn" type="button" title="切换深浅主题" aria-label="切换深浅主题" aria-pressed="false">
+          <svg class="theme-icon theme-icon--sun" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.1" stroke="currentColor" stroke-width="1.7"/><path d="M12 2.6v2.4M12 19v2.4M2.6 12h2.4M19 12h2.4M5.2 5.2l1.7 1.7M17.1 17.1l1.7 1.7M18.8 5.2l-1.7 1.7M6.9 17.1l-1.7 1.7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg><svg class="theme-icon theme-icon--moon" viewBox="0 0 24 24" fill="none"><path d="M20.5 14.3A8.4 8.4 0 0 1 9.7 3.5a8.6 8.6 0 1 0 10.8 10.8Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+        </button>
+        <span id="status" class="toast" data-kind="ok" data-show="false" role="status" aria-live="polite"></span>
+        <button id="logoutBtnTop" class="icon-btn" type="button" title="退出登录" aria-label="退出登录">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M15 8V6.2A2.2 2.2 0 0 0 12.8 4H6.2A2.2 2.2 0 0 0 4 6.2v11.6A2.2 2.2 0 0 0 6.2 20h6.6a2.2 2.2 0 0 0 2.2-2.2V16M10.5 12H21m0 0-3.2-3.2M21 12l-3.2 3.2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <main class="content">
+      <!-- ===== 用量总览 ===== -->
+      <section class="view is-active" data-view="overview">
+        <div class="toolbar">
+          <label class="field field--inline">
+            <span>时间范围</span>
+            <select id="usageRange">
+              <option value="24">最近 24 小时</option>
+              <option value="168" selected>最近 7 天</option>
+              <option value="720">最近 30 天</option>
+            </select>
+          </label>
+          <button id="refreshUsage" class="btn btn--soft" type="button">刷新数据</button>
+          <div class="toolbar-meta">
+            <span id="usageCoverage" class="pill">—</span>
+            <span id="usageUpdatedAt" class="muted">—</span>
+          </div>
+        </div>
+
+        <div class="kpi-grid">
+          <article class="glass kpi">
+            <p class="kpi-label">请求数</p>
+            <p class="kpi-value" id="usageRequests">0</p>
+          </article>
+          <article class="glass kpi">
+            <p class="kpi-label">成功率</p>
+            <p class="kpi-value" id="usageSuccess">—</p>
+          </article>
+          <article class="glass kpi">
+            <p class="kpi-label">Token 总量</p>
+            <p class="kpi-value" id="usageTokens">0</p>
+          </article>
+          <article class="glass kpi">
+            <p class="kpi-label">平均 TPS</p>
+            <p class="kpi-value" id="usageTps">—</p>
+          </article>
+          <article class="glass kpi">
+            <p class="kpi-label">首字延迟</p>
+            <p class="kpi-value" id="usageFirstToken">—</p>
+          </article>
+          <article class="glass kpi">
+            <p class="kpi-label">平均耗时</p>
+            <p class="kpi-value" id="usageDuration">—</p>
+          </article>
+        </div>
+
+        <article class="glass panel">
+          <header class="panel-head">
+            <h3>Token 走势</h3>
+            <div id="usageLegend" class="legend"></div>
+          </header>
+          <div class="chart-wrap"><canvas id="usageChart" height="240"></canvas></div>
+        </article>
+
+        <article class="glass panel">
+          <header class="panel-head"><h3>按提供商</h3></header>
+          <div id="usageProviders" class="table-slot"></div>
+        </article>
+        <article class="glass panel">
+          <header class="panel-head"><h3>按模型</h3></header>
+          <div id="usageModels" class="table-slot"></div>
+          <div class="pager">
+            <span id="modelPageInfo" class="page-info">—</span>
+            <button id="modelPrev" class="btn btn--ghost btn--sm" type="button">上一页</button>
+            <select id="modelPageSize" class="page-size">
+              <option value="5">5 条/页</option>
+              <option value="10" selected>10 条/页</option>
+              <option value="20">20 条/页</option>
+            </select>
+            <button id="modelNext" class="btn btn--ghost btn--sm" type="button">下一页</button>
+          </div>
+        </article>
+
+        <article class="glass panel">
+          <header class="panel-head"><h3>请求日志</h3></header>
+          <div id="usageLogs" class="table-slot"></div>
+          <div class="pager">
+            <span id="logPageInfo" class="page-info">—</span>
+            <button id="logPrev" class="btn btn--ghost btn--sm" type="button">上一页</button>
+            <select id="logPageSize" class="page-size">
+              <option value="10" selected>10 条/页</option>
+              <option value="20">20 条/页</option>
+              <option value="50">50 条/页</option>
+            </select>
+            <button id="logNext" class="btn btn--ghost btn--sm" type="button">下一页</button>
+          </div>
+        </article>
+      </section>
+
+      <!-- ===== AI 提供商 ===== -->
+      <section class="view" data-view="providers">
+        <div class="toolbar">
+          <p class="muted">集中管理上游、模型白名单与鉴权方式。</p>
+          <button class="btn btn--primary" data-open="providerDialog" type="button">新增提供商</button>
+        </div>
+        <div id="providerList" class="card-list"></div>
+      </section>
+
+      <!-- ===== 客户端密钥 ===== -->
+      <section class="view" data-view="keys">
+        <div class="toolbar">
+          <p class="muted">网关签发的 <code>llmf_</code> 密钥，可为每个密钥设置独立限额。</p>
+          <button class="btn btn--primary" data-open="keyDialog" type="button">新建密钥</button>
+        </div>
+        <div id="keyList" class="card-list"></div>
+      </section>
+
+      <!-- ===== 接口测试 ===== -->
+      <section class="view" data-view="playground">
+        <div class="split split--even">
+          <article class="glass panel">
+            <header class="panel-head"><h3>发送请求</h3></header>
+            <form id="testForm" class="stack">
+              <label class="field">
+                <span>接口</span>
+                <select id="testEndpoint">
+                  <option value="chat/completions">POST /v1/chat/completions</option>
+                  <option value="responses">POST /v1/responses</option>
+                  <option value="messages">POST /v1/messages</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>模型</span>
+                <select id="testModel"></select>
+              </label>
+              <label class="field">
+                <span>客户端密钥</span>
+                <input id="testKey" type="password" placeholder="llmf_..." autocomplete="off">
+              </label>
+              <label class="field">
+                <span>提示词</span>
+                <textarea id="testPrompt" rows="4" placeholder="你好">你好</textarea>
+              </label>
+              <button class="btn btn--primary btn--block" type="submit">发送请求</button>
+            </form>
+          </article>
+          <article class="glass panel">
+            <header class="panel-head"><h3>响应</h3></header>
+            <pre id="testResult" class="code-out">等待请求…</pre>
+          </article>
+        </div>
+      </section>
+
+      <!-- ===== 账号安全 ===== -->
+      <section class="view" data-view="settings">
+        <div class="split split--even">
+          <article class="glass panel">
+            <header class="panel-head"><h3>账号信息</h3></header>
+            <dl class="kv">
+              <div><dt>账号</dt><dd id="meUsername">—</dd></div>
+              <div><dt>登录方式</dt><dd id="meVia">—</dd></div>
+              <div><dt>创建时间</dt><dd id="meCreatedAt">—</dd></div>
+              <div><dt>最近修改</dt><dd id="meUpdatedAt">—</dd></div>
+            </dl>
+          </article>
+          <article class="glass panel">
+            <header class="panel-head"><h3>修改密码</h3></header>
+            <form id="passwordForm" class="stack">
+              <label class="field">
+                <span>当前密码</span>
+                <input id="currentPassword" type="password" autocomplete="current-password" required>
+              </label>
+              <label class="field">
+                <span>新密码</span>
+                <input id="newPassword" type="password" autocomplete="new-password" placeholder="至少 10 位，含两类字符" required>
+              </label>
+              <label class="field">
+                <span>确认新密码</span>
+                <input id="confirmPassword" type="password" autocomplete="new-password" required>
+              </label>
+              <button class="btn btn--primary btn--block" type="submit">更新密码</button>
+              <p class="hint">修改后所有已登录设备会被强制重新登录，当前设备自动续期。</p>
+            </form>
+          </article>
+        </div>
+        <article class="glass panel">
+          <header class="panel-head"><h3>接口基址</h3></header>
+          <div class="kv">
+            <div><dt>OpenAI</dt><dd><code id="baseUrlOpenAI">—</code></dd></div>
+            <div><dt>Anthropic</dt><dd><code id="baseUrlAnthropic">—</code></dd></div>
+          </div>
+          <p class="hint">客户端把 Base URL 指向这里，用 <code>llmf_</code> 密钥作为 Bearer 即可调用。匿名上游不会收到任何 Authorization 头。</p>
+        </article>
+      </section>
+    </main>
+
+    <nav class="tabbar glass" aria-label="移动端导航">
+      <button class="tab is-active" data-view="overview" type="button"><svg viewBox="0 0 24 24" fill="none"><path d="M4 19V9m5 10V5m5 14v-7m5 7V8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span>总览</span></button>
+      <button class="tab" data-view="providers" type="button"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3 3.8 7.5v9L12 21l8.2-4.5v-9L12 3Z" stroke="currentColor" stroke-width="1.8"/></svg><span>提供商</span></button>
+      <button class="tab" data-view="keys" type="button"><svg viewBox="0 0 24 24" fill="none"><circle cx="8.5" cy="12" r="3.6" stroke="currentColor" stroke-width="1.8"/><path d="M12.1 12H21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span>密钥</span></button>
+      <button class="tab" data-view="playground" type="button"><svg viewBox="0 0 24 24" fill="none"><path d="M5 6.5h14M5 12h9M5 17.5h11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span>测试</span></button>
+      <button class="tab" data-view="settings" type="button"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="8.4" stroke="currentColor" stroke-width="1.4"/></svg><span>账号</span></button>
+    </nav>
+  </div>
+</div>
+
+<!-- ============ 对话框 ============ -->
+<dialog id="providerDialog" class="sheet glass">
+  <form id="providerForm" method="dialog" class="stack">
+    <header class="sheet-head">
+      <h3 id="providerDialogTitle">新增提供商</h3>
+      <button class="icon-btn" type="button" data-close aria-label="关闭">✕</button>
+    </header>
+    <div class="grid-2">
+      <label class="field"><span>显示名称</span><input id="providerName" type="text" placeholder="例如 我的匿名中转" required></label>
+      <label class="field"><span>类型</span>
+        <select id="providerType">
+          <option value="openai-compatible">OpenAI Compatible</option>
+          <option value="google">Google AI Studio</option>
+          <option value="groq">Groq</option>
+          <option value="nvidia">NVIDIA NIM</option>
+          <option value="openrouter">OpenRouter</option>
+          <option value="siliconflow">SiliconFlow</option>
+          <option value="zhipu">智谱 BigModel</option>
+          <option value="mistral">Mistral</option>
+          <option value="workers-ai">Cloudflare Workers AI</option>
+        </select>
+      </label>
+    </div>
+    <label class="field" id="providerAuthModeLabel"><span>鉴权方式</span>
+      <select id="providerAuthMode">
+        <option value="bearer">API Key（Authorization: Bearer）</option>
+        <option value="none">无鉴权 / 匿名上游</option>
+      </select>
+    </label>
+    <div id="providerKeyField">
+      <label class="field"><span>提供商 API Key</span><input id="providerApiKey" type="password" autocomplete="off"></label>
+    </div>
+    <label class="field"><span>Base URL / Workers AI Account ID</span><input id="providerBaseUrl" type="text" spellcheck="false" placeholder="https://example.com/v1"></label>
+    <p id="providerHint" class="hint"></p>
+    <div class="row">
+      <button id="discoverDraft" class="btn btn--soft" type="button">自动获取模型</button>
+      <span id="modelCount" class="muted">尚未获取。</span>
+    </div>
+    <label class="field"><span>模型列表（每行一个，可手动填写）</span><textarea id="providerModels" rows="6" spellcheck="false"></textarea></label>
+    <footer class="sheet-foot">
+      <button class="btn btn--ghost" type="button" data-close>取消</button>
+      <button id="saveProvider" class="btn btn--primary" value="default">保存</button>
+    </footer>
+  </form>
+</dialog>
+
+<dialog id="modelDialog" class="sheet glass">
+  <form id="modelForm" method="dialog" class="stack">
+    <header class="sheet-head">
+      <h3 id="modelDialogTitle">选择模型</h3>
+      <button class="icon-btn" type="button" data-close aria-label="关闭">✕</button>
+    </header>
+    <div class="row">
+      <input id="modelSearch" class="grow" type="search" placeholder="搜索模型…">
+      <label id="freeModelsFilter" class="check"><input id="onlyFreeModels" type="checkbox"><span>只看免费</span></label>
+    </div>
+    <div id="modelChoices" class="choice-list"></div>
+    <div class="row row--split">
+      <div class="row">
+        <button id="selectAllModels" class="btn btn--ghost btn--sm" type="button">全选</button>
+        <button id="clearAllModels" class="btn btn--ghost btn--sm" type="button">清空</button>
+      </div>
+      <span id="modelSelectionCount" class="muted">已选 0 项</span>
+    </div>
+    <footer class="sheet-foot">
+      <button class="btn btn--ghost" type="button" data-close>取消</button>
+      <button class="btn btn--primary" value="default">保存选择</button>
+    </footer>
+  </form>
+</dialog>
+
+<dialog id="keyDialog" class="sheet glass sheet--sm">
+  <form id="keyForm" method="dialog" class="stack">
+    <header class="sheet-head">
+      <h3 id="keyDialogTitle">新建客户端密钥</h3>
+      <button class="icon-btn" type="button" data-close aria-label="关闭">✕</button>
+    </header>
+    <label class="field"><span>名称</span><input id="keyName" type="text" placeholder="例如 本地开发" required></label>
+    <label class="field"><span>自定义密钥（留空则自动生成）</span><input id="customKey" type="text" spellcheck="false" placeholder="llmf_..."></label>
+    <div class="grid-2">
+      <label class="field"><span>每分钟请求数</span><input id="keyRpm" type="number" min="1" placeholder="不限"></label>
+      <label class="field"><span>24h 请求上限</span><input id="keyDailyRequests" type="number" min="1" placeholder="不限"></label>
+      <label class="field"><span>月度 Token 上限</span><input id="keyMonthlyTokens" type="number" min="1" placeholder="不限"></label>
+      <label class="field"><span>单次最大输出 Token</span><input id="keyMaxOutputTokens" type="number" min="1" placeholder="不限"></label>
+    </div>
+    <footer class="sheet-foot">
+      <button class="btn btn--ghost" type="button" data-close>取消</button>
+      <button id="saveKey" class="btn btn--primary" value="default">生成密钥</button>
+    </footer>
+  </form>
+</dialog>
+
+<dialog id="revealDialog" class="sheet glass sheet--sm">
+  <div class="stack">
+    <header class="sheet-head"><h3>密钥已生成</h3><button class="icon-btn" type="button" data-close aria-label="关闭">✕</button></header>
+    <p class="hint">这是唯一一次显示完整密钥，请立即复制保存。</p>
+    <pre id="revealedKey" class="code-out"></pre>
+    <footer class="sheet-foot">
+      <button class="btn btn--soft" type="button" data-close>关闭</button>
+      <button id="copyKey" class="btn btn--primary" type="button">复制密钥</button>
+    </footer>
+  </div>
+</dialog>
+
+<script src="/app.js" type="module"></script>
+</body>
+</html>
+
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="application-name" content="LLMflare-Anon">
 <meta name="theme-color" content="#06070b">
