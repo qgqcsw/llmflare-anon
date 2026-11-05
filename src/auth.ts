@@ -17,7 +17,7 @@ const ACCOUNT_KEY = "admin:account:v1";
 const SESSION_PREFIX = "admin:session:";
 const THROTTLE_PREFIX = "admin:throttle:";
 
-const PBKDF2_ITERATIONS = 210_000;
+const PBKDF2_ITERATIONS = 100_000;
 const SESSION_TTL_SHORT = 60 * 60 * 12; // 12 小时
 const SESSION_TTL_LONG = 60 * 60 * 24 * 30; // 30 天（记住我）
 export const MAX_LOGIN_FAILURES = 6;
