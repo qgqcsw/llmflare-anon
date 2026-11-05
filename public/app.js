@@ -124,6 +124,8 @@ function setStage(stage) {
   $("#loginStage").hidden = bootstrap;
   $("#bootstrapStage").hidden = !bootstrap;
   $("#loginHint").textContent = "";
+  const bootstrapHint = $("#bootstrapHint");
+  if (bootstrapHint) bootstrapHint.textContent = "";
 }
 
 $("#toBootstrap")?.addEventListener("click", () => setStage("bootstrap"));
@@ -265,8 +267,20 @@ $("#loginForm")?.addEventListener("submit", async (event) => {
 $("#bootstrapForm")?.addEventListener("submit", async (event) => {
   event.preventDefault();
   const submit = event.submitter || $("#bootstrapForm button[type=submit]");
-  submit.disabled = true;
-  $("#loginHint").textContent = "";
+  const hint = $("#bootstrapHint");
+  const hintEl = hint || $("#loginHint");
+  const originalLabel = submit ? submit.textContent : "";
+
+  if (submit) {
+    submit.disabled = true;
+    submit.textContent = "正在创建…";
+  }
+  if (hintEl) hintEl.textContent = "";
+
+  // 超时保护：避免请求挂起时按钮永久停在禁用态，让用户无从判断
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 20000);
+
   try {
     const data = await fetch("/admin/auth/bootstrap", {
       method: "POST",
@@ -276,20 +290,51 @@ $("#bootstrapForm")?.addEventListener("submit", async (event) => {
         password: $("#bootstrapPassword").value,
         adminToken: $("#bootstrapToken").value,
       }),
+      signal: controller.signal,
     }).then(async (response) => {
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload.error?.message || `HTTP ${response.status}`);
       return payload;
     });
+
+    clearTimeout(timer);
+
+    // 兜底校验：若 /admin/* 未被 Worker 接管（例如缺少 run_worker_first），
+    // 静态资源会返回 HTML，此时 status 仍是 200 但没有 token，必须明确报错而不是静默失败
+    if (!data || !data.token) {
+      throw new Error(
+        "服务器未返回会话令牌。请确认 Worker 已正确部署，且 wrangler.jsonc 的 run_worker_first 包含 /admin/*"
+      );
+    }
+
     setToken(data.token, true);
     $("#bootstrapToken").value = "";
     $("#bootstrapPassword").value = "";
-    await enterWorkspace({ username: data.username, via: "session" });
-    notify("管理员账号已创建");
+
+    // 账号可能已经建成功；若仅仅是控制台加载失败，必须让用户知道建号已完成
+    if (submit) submit.textContent = "正在进入控制台…";
+    try {
+      await enterWorkspace({ username: data.username, via: "session" });
+      notify("管理员账号已创建");
+    } catch (enterError) {
+      showGate("login");
+      const loginHint = $("#loginHint");
+      if (loginHint) {
+        loginHint.textContent =
+          `管理员账号已创建成功，但控制台加载失败：${enterError.message}。请直接用刚设置的账号密码登录；若仍失败，请检查 D1 是否已执行建表 SQL。`;
+      }
+    }
   } catch (error) {
-    $("#loginHint").textContent = error.message;
+    const message = error.name === "AbortError"
+      ? "请求超时（20 秒无响应）。请确认 Worker 已正常部署，并检查 ADMIN_TOKEN 是否已在控制台设置为 Secret。"
+      : `${error.message}（若提示未设置 ADMIN_TOKEN，请到 Worker 的 Settings → Variables and Secrets 添加 Secret 后重新部署）`;
+    if (hintEl) hintEl.textContent = message;
   } finally {
-    submit.disabled = false;
+    clearTimeout(timer);
+    if (submit) {
+      submit.disabled = false;
+      submit.textContent = originalLabel || "创建并登录";
+    }
   }
 });
 
