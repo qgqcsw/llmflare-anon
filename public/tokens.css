@@ -1,0 +1,293 @@
+/* ==========================================================================
+   LLMflare-Anon · 设计令牌
+   材质语言：黑曜石（obsidian）+ 液态玻璃（liquid glass）
+   - 深色为默认（黑曜石），浅色为可选（白瓷 / porcelain）
+   - 两套主题共用同一组语义令牌，切换只改令牌值，不改结构
+   - 强调色取青蓝→紫的渐变，克制使用，只在关键动作与数据上出现
+   ========================================================================== */
+
+/* ------------------------------ 深色（默认） ------------------------------ */
+:root {
+  color-scheme: dark;
+
+  /* —— 黑曜石基底 —— */
+  --obsidian-0: #05060a;
+  --obsidian-1: #080a11;
+  --obsidian-2: #0c0f18;
+  --obsidian-3: #12161f;
+
+  /* —— 极光背景 —— */
+  --aurora-core: #131a2c;
+  --aurora-tail: #04050a;
+  --aurora-a: rgba(76, 201, 240, .55);
+  --aurora-b: rgba(123, 108, 246, .5);
+  --aurora-c: rgba(176, 108, 246, .38);
+  --aurora-d: rgba(76, 201, 240, .3);
+  --aurora-opacity: .5;
+
+  /* —— 玻璃层 —— */
+  --glass-fill: rgba(255, 255, 255, .045);
+  --glass-fill-strong: rgba(255, 255, 255, .075);
+  --glass-stroke: rgba(255, 255, 255, .10);
+  --glass-stroke-strong: rgba(255, 255, 255, .18);
+  --glass-highlight: rgba(255, 255, 255, .42);
+  --glass-shadow: 0 24px 60px -20px rgba(0, 0, 0, .85);
+
+  /* —— 表面与面板 —— */
+  --panel-base: rgba(10, 13, 20, .55);
+  --panel-solid: rgba(10, 13, 20, .93);
+  --chrome-top: rgba(8, 10, 16, .62);
+  --chrome-side: rgba(8, 10, 16, .72);
+  --chrome-tab: rgba(8, 10, 16, .82);
+  --field-base: rgba(6, 8, 13, .62);
+  --field-focus: rgba(6, 8, 13, .85);
+  --well-base: rgba(3, 6, 10, .45);
+  --well-strong: rgba(3, 6, 10, .7);
+  --menu-base: #0b0e15;
+  --scrim: rgba(2, 4, 8, .68);
+  --shadow-deep: rgba(0, 0, 0, .95);
+
+  /* —— 玻璃高光 / 白色叠加层（浅色主题会整体压暗）—— */
+  --sheen-a: rgba(255, 255, 255, .085);
+  --sheen-b: rgba(255, 255, 255, .028);
+  --sheen-b2: rgba(255, 255, 255, .02);
+  --sheen-c: rgba(255, 255, 255, .012);
+  --sheen-top: rgba(255, 255, 255, .10);
+  --edge-hi: rgba(255, 255, 255, .09);
+  --edge-hi-2: rgba(255, 255, 255, .12);
+  --edge-hi-3: rgba(255, 255, 255, .28);
+  --btn-inner: rgba(255, 255, 255, .35);
+  --btn-inner-2: rgba(255, 255, 255, .4);
+
+  /* —— 白色洗染 / 细线（浅色主题反转为深色淡线）—— */
+  --wash: rgba(255, 255, 255, .05);
+  --wash-soft: rgba(255, 255, 255, .03);
+  --wash-strong: rgba(255, 255, 255, .06);
+  --wash-faint: rgba(255, 255, 255, .04);
+  --hairline: rgba(255, 255, 255, .1);
+  --hairline-strong: rgba(255, 255, 255, .16);
+  --hairline-soft: rgba(255, 255, 255, .07);
+  --hairline-faint: rgba(255, 255, 255, .045);
+  --hdr-line: rgba(255, 255, 255, .08);
+  --scroll-thumb: rgba(255, 255, 255, .15);
+  --scroll-thumb-hover: rgba(255, 255, 255, .26);
+
+  /* —— 文字 —— */
+  --ink: #eef1f7;
+  --ink-soft: #b6bdd0;
+  --ink-dim: #7f879b;
+  --ink-faint: #5a6274;
+
+  /* —— 强调色（青→紫）—— */
+  --accent: #4cc9f0;
+  --accent-2: #7b6cf6;
+  --accent-3: #b06cf6;
+  --accent-glow: rgba(76, 201, 240, .35);
+  --accent-gradient: linear-gradient(135deg, #4cc9f0 0%, #7b6cf6 55%, #b06cf6 100%);
+
+  /* —— 强调色淡染阶梯（背景、描边、发光统一收口）—— */
+  --accent-tint-1: rgba(76, 201, 240, .09);
+  --accent-tint-2: rgba(76, 201, 240, .16);
+  --accent-tint-3: rgba(76, 201, 240, .25);
+  --accent-tint-4: rgba(76, 201, 240, .34);
+  --accent-line: rgba(76, 201, 240, .58);
+  --purple-tint: rgba(123, 108, 246, .12);
+
+  /* —— 强调色上的文字 / 强调色系文本 —— */
+  --on-accent: #04121a;
+  --accent-ink: #bfe9fb;
+  --accent-ink-strong: #9fe4fb;
+  --nav-active-ink: #eaf8ff;
+  --logo-ink: #d6f3ff;
+  --code-ink: #c3f0ff;
+  --kpi-a: #ffffff;
+  --kpi-b: #b9e8fb;
+  --selection-ink: #04121a;
+
+  /* —— 语义色 —— */
+  --ok: #3ddc9a;
+  --warn: #f7b955;
+  --bad: #ff6b81;
+  --ok-soft: rgba(61, 220, 154, .14);
+  --warn-soft: rgba(247, 185, 85, .14);
+  --bad-soft: rgba(255, 107, 129, .14);
+  --ok-ink: #b9f3da;
+  --warn-ink: #ffe1b0;
+  --bad-ink: #ffc2ca;
+  --ok-tint: rgba(61, 220, 154, .30);
+  --ok-line: rgba(61, 220, 154, .70);
+  --warn-tint: rgba(247, 185, 85, .31);
+  --warn-line: rgba(247, 185, 85, .70);
+  --bad-tint: rgba(255, 107, 129, .29);
+  --bad-line: rgba(255, 107, 129, .65);
+
+  /* —— 字体 —— */
+  --font-sans: "Inter", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --font-mono: "JetBrains Mono", "SFMono-Regular", "Cascadia Code", Consolas, "Liberation Mono", monospace;
+
+  /* —— 尺度 —— */
+  --r-xs: 8px;
+  --r-sm: 12px;
+  --r-md: 16px;
+  --r-lg: 22px;
+  --r-xl: 28px;
+  --r-pill: 999px;
+
+  --sp-1: .25rem;
+  --sp-2: .5rem;
+  --sp-3: .75rem;
+  --sp-4: 1rem;
+  --sp-5: 1.5rem;
+  --sp-6: 2rem;
+  --sp-7: 3rem;
+
+  --fs-xs: .75rem;
+  --fs-sm: .8125rem;
+  --fs-base: .9375rem;
+  --fs-lg: 1.0625rem;
+  --fs-xl: 1.375rem;
+  --fs-2xl: 1.75rem;
+  --fs-3xl: clamp(1.9rem, 4vw, 2.6rem);
+
+  /* —— 动效 —— */
+  --ease: cubic-bezier(.22, 1, .36, 1);
+  --ease-soft: cubic-bezier(.4, 0, .2, 1);
+  --t-fast: 140ms;
+  --t-base: 240ms;
+  --t-slow: 420ms;
+
+  /* —— 层级 —— */
+  --z-bg: 0;
+  --z-content: 1;
+  --z-topbar: 40;
+  --z-tabbar: 60;
+  --z-dialog: 100;
+  --z-toast: 200;
+
+  /* —— 布局 —— */
+  --sidebar-w: 248px;
+  --topbar-h: 64px;
+  --tabbar-h: 64px;
+  --page-max: 1280px;
+}
+
+/* ------------------------------ 浅色（白瓷） ------------------------------ */
+html[data-theme="light"] {
+  color-scheme: light;
+
+  --obsidian-0: #f4f7fb;
+  --obsidian-1: #eef2f9;
+  --obsidian-2: #e6ecf5;
+  --obsidian-3: #dde5f0;
+
+  /* 极光换成极淡的彩色云雾，避免白色底上出现脏灰 */
+  --aurora-core: #ffffff;
+  --aurora-tail: #e8eef7;
+  --aurora-a: rgba(76, 201, 240, .30);
+  --aurora-b: rgba(123, 108, 246, .24);
+  --aurora-c: rgba(176, 108, 246, .18);
+  --aurora-d: rgba(76, 201, 240, .16);
+  --aurora-opacity: .55;
+
+  /* 白瓷玻璃：半透明白 + 冷灰描边 */
+  --glass-fill: rgba(255, 255, 255, .62);
+  --glass-fill-strong: rgba(255, 255, 255, .82);
+  --glass-stroke: rgba(17, 24, 39, .10);
+  --glass-stroke-strong: rgba(17, 24, 39, .18);
+  --glass-highlight: rgba(255, 255, 255, .95);
+  --glass-shadow: 0 20px 44px -22px rgba(23, 32, 54, .28);
+
+  --panel-base: rgba(255, 255, 255, .72);
+  --panel-solid: rgba(255, 255, 255, .97);
+  --chrome-top: rgba(255, 255, 255, .82);
+  --chrome-side: rgba(255, 255, 255, .88);
+  --chrome-tab: rgba(255, 255, 255, .92);
+  --field-base: rgba(255, 255, 255, .90);
+  --field-focus: rgba(255, 255, 255, 1);
+  --well-base: rgba(240, 244, 251, .82);
+  --well-strong: rgba(240, 244, 251, .97);
+  --menu-base: #ffffff;
+  --scrim: rgba(23, 32, 54, .34);
+  --shadow-deep: rgba(23, 32, 54, .26);
+
+  /* 玻璃顶面高光在白瓷上保留白色，才能维持"磨砂"观感 */
+  --sheen-a: rgba(255, 255, 255, .80);
+  --sheen-b: rgba(255, 255, 255, .46);
+  --sheen-b2: rgba(255, 255, 255, .34);
+  --sheen-c: rgba(255, 255, 255, .14);
+  --sheen-top: rgba(255, 255, 255, .55);
+  --edge-hi: rgba(255, 255, 255, .98);
+  --edge-hi-2: rgba(255, 255, 255, 1);
+  --edge-hi-3: rgba(255, 255, 255, .9);
+  --btn-inner: rgba(255, 255, 255, .55);
+  --btn-inner-2: rgba(255, 255, 255, .62);
+
+  /* 洗染与细线在浅色下必须反转为深色淡墨，否则完全不可见 */
+  --wash: rgba(17, 24, 39, .045);
+  --wash-soft: rgba(17, 24, 39, .03);
+  --wash-strong: rgba(17, 24, 39, .06);
+  --wash-faint: rgba(17, 24, 39, .035);
+  --hairline: rgba(17, 24, 39, .12);
+  --hairline-strong: rgba(17, 24, 39, .20);
+  --hairline-soft: rgba(17, 24, 39, .08);
+  --hairline-faint: rgba(17, 24, 39, .05);
+  --hdr-line: rgba(17, 24, 39, .10);
+  --scroll-thumb: rgba(17, 24, 39, .20);
+  --scroll-thumb-hover: rgba(17, 24, 39, .34);
+
+  --ink: #101521;
+  --ink-soft: #454f63;
+  --ink-dim: #646f84;
+  --ink-faint: #8b95a8;
+
+  /* 强调色在白底上需要压深才够对比度 */
+  --accent: #0e8fbe;
+  --accent-2: #6250e8;
+  --accent-3: #8f4fe0;
+  --accent-glow: rgba(14, 143, 190, .30);
+  --accent-gradient: linear-gradient(135deg, #1299c6 0%, #6250e8 55%, #8f4fe0 100%);
+
+  --accent-tint-1: rgba(14, 143, 190, .08);
+  --accent-tint-2: rgba(14, 143, 190, .13);
+  --accent-tint-3: rgba(14, 143, 190, .18);
+  --accent-tint-4: rgba(14, 143, 190, .26);
+  --accent-line: rgba(14, 143, 190, .48);
+  --purple-tint: rgba(98, 80, 232, .10);
+
+  --on-accent: #ffffff;
+  --accent-ink: #0b5f7d;
+  --accent-ink-strong: #084c64;
+  --nav-active-ink: #0a4a63;
+  --logo-ink: #0b5a75;
+  --code-ink: #12556a;
+  --kpi-a: #101521;
+  --kpi-b: #0e7fa8;
+  --selection-ink: #ffffff;
+
+  --ok: #0f9d68;
+  --warn: #b8790a;
+  --bad: #d3364d;
+  --ok-soft: rgba(15, 157, 104, .12);
+  --warn-soft: rgba(184, 121, 10, .12);
+  --bad-soft: rgba(211, 54, 77, .12);
+  --ok-ink: #0a6b48;
+  --warn-ink: #7d5206;
+  --bad-ink: #9c1f31;
+  --ok-tint: rgba(15, 157, 104, .20);
+  --ok-line: rgba(15, 157, 104, .55);
+  --warn-tint: rgba(184, 121, 10, .20);
+  --warn-line: rgba(184, 121, 10, .55);
+  --bad-tint: rgba(211, 54, 77, .20);
+  --bad-line: rgba(211, 54, 77, .52);
+}
+
+/* 降低动效偏好 */
+@media (prefers-reduced-motion: reduce) {
+  :root { --t-fast: 1ms; --t-base: 1ms; --t-slow: 1ms; }
+}
+
+/* 主题切换时让颜色平滑过渡，但不拖慢交互 */
+html.theme-anim,
+html.theme-anim body {
+  transition: background-color var(--t-base) var(--ease-soft), color var(--t-base) var(--ease-soft);
+}

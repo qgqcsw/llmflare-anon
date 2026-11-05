@@ -1,0 +1,79 @@
+LLMflare-Anon
+=============
+
+本仓库是 LLMflare 的独立二次开发版本（derivative work）。
+
+原项目
+------
+名称：LLMflare
+作者：Jiao77
+地址：https://github.com/Jiao77/LLMflare
+许可：MIT License
+
+原始版权与许可声明完整保留在 LICENSE 文件中，适用于本项目全部原始代码。
+
+本二改版本
+----------
+名称：LLMflare-Anon
+基线：Jiao77/LLMflare main 分支
+性质：独立演进的分支，不启用 GitHub Sync fork，不自动合并上游变更
+
+二次开发改动范围（仅此，未改动网关核心逻辑）
+------------------------------------------------
+1. src/types.ts
+   - 新增类型 ProviderAuthMode = "bearer" | "none"
+   - Provider 接口新增可选字段 authMode
+2. src/providers.ts
+   - 新增 providerAuthMode() 与 providerRequiresApiKey() 两个判定函数
+   - discoverProviderModels() 入口校验改为 providerRequiresApiKey()，允许匿名模式
+   - 模型目录请求改为条件添加 Authorization 头（原为无条件拼 Bearer）
+   - upstreamHeaders() 增加 authMode !== "none" 兜底，确保匿名模式绝不外发 Key
+3. src/admin.ts
+   - POST /admin/providers、PUT /admin/providers/:id、POST /admin/providers/discover
+     三处归一化 authMode
+   - authMode === "none" 时服务端强制 apiKey = undefined，使已存 Key 可被真正清除
+4. public/index.html
+   - 提供商弹窗新增「鉴权方式」下拉
+   - API Key 的 label 与 input 包裹进 #providerKeyField 容器
+5. public/app.js
+   - 鉴权方式与 Key 输入框联动隐藏
+   - 表单与发现请求的 payload 增加 authMode
+   - Provider 列表状态显示「匿名访问」
+6. 品牌与标识
+   - 页面标题、页脚、健康检查 service 字段改为 llmflare-anon
+   - package.json 名称与版本改为 llmflare-anon / 1.3.0-anon.0
+
+本版本追加改动（管理员账号登录）
+--------------------------------
+7. src/auth.ts（新增文件）
+   - 账号密码体系：PBKDF2-SHA256（10 万次迭代 + 随机盐）保存口令摘要
+   - 会话管理：随机会话令牌，仅存 SHA-256 摘要，复用既有 CONFIG（KV）命名空间
+   - 登录限流：按客户端 IP 记录失败次数，超阈值临时锁定
+   - 首次引导：仅在上游未配置管理员账号时，用 ADMIN_TOKEN 完成一次性建号
+8. src/admin.ts
+   - 新增 /admin/auth/state、/admin/auth/bootstrap、/admin/auth/login、
+     /admin/auth/logout、/admin/auth/password、/admin/auth/me 六个端点
+   - authorized() 改为会话优先、ADMIN_TOKEN 兼作应急通道（authenticateAdmin）
+   - 修改密码后清空旧会话并重新签发，避免其他设备继续持有有效凭据
+9. public/index.html、public/app.js、public/styles.css、public/tokens.css
+   - 界面整体重做：黑曜石暗色底 + 液态玻璃质感、极光渐变光晕、等宽数字
+   - 新增登录门（登录 / 首次建号两个阶段），未登录不渲染工作区
+   - 桌面侧栏导航 + 移动端底部标签栏自适应布局
+   - 用量看板改为自绘 Canvas 柱状图（按提供商分组、叠加请求数折线）
+   - 全部既有接口调用与交互行为保持不变（提供商、模型选择、密钥、测试台）
+
+未改动的部分
+------------
+src/store.ts、src/index.ts 路由逻辑、用量统计、客户端密钥体系、
+协议适配（Chat Completions / Responses / Messages）、迁移脚本、测试框架。
+
+MIT License 摘要
+----------------
+本项目沿用原项目的 MIT 许可证。允许使用、复制、修改、合并、发布、分发、
+再许可及销售，唯一要求是在所有副本或重要部分中保留上述版权声明与许可声明。
+原始版权归 Jiao77 所有。
+
+问题反馈
+--------
+本二改版本引入的问题请反馈至本项目仓库，请勿打扰原作者。
+上游项目的问题请前往 https://github.com/Jiao77/LLMflare/issues。

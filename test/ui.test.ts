@@ -1,0 +1,44 @@
+import { readFileSync } from "node:fs";
+import { describe, expect, it } from "vitest";
+
+const html = readFileSync(new URL("../public/index.html", import.meta.url), "utf8");
+const script = readFileSync(new URL("../public/app.js", import.meta.url), "utf8");
+
+describe("provider dialog", () => {
+  it("uses a non-submitting close button so required fields do not block dismissal", () => {
+    expect(html).toMatch(/id="providerDialog"[\s\S]*?<button class="icon-btn" type="button" data-close aria-label="关闭">/);
+  });
+
+  it("offers editing and preserves an existing API key when the field is blank", () => {
+    expect(script).toContain('data-edit-provider="${provider.id}"');
+    expect(script).toContain('"已保存；留空则保持不变"');
+    expect(script).toContain('method: providerId ? "PUT" : "POST"');
+  });
+
+  it("enables free-model grouping for all providers that expose a free tier", () => {
+    expect(script).toContain('["openrouter", "siliconflow", "zhipu"].includes(type)');
+    expect(script).not.toContain('["openrouter", "siliconflow", "zhipu", "mistral"].includes(type)');
+  });
+
+  it("offers per-key request and token guardrails", () => {
+    expect(html).toContain('id="keyRpm"');
+    expect(html).toContain('id="keyDailyRequests"');
+    expect(html).toContain('id="keyMonthlyTokens"');
+    expect(html).toContain('id="keyMaxOutputTokens"');
+    expect(script).toContain("data-toggle-key");
+    expect(script).toContain("data-edit-key");
+  });
+});
+
+describe("usage dashboard", () => {
+  it("separates popular-model input, output, and total tokens", () => {
+    expect(script).toContain("<th>输入 Token</th><th>输出 Token</th><th>总 Token</th>");
+    expect(script).toContain("item.input_tokens");
+    expect(script).toContain("item.output_tokens");
+  });
+
+  it("draws the daily bars from output tokens", () => {
+    expect(script).toContain("item.output_tokens");
+    expect(script).not.toContain("data.dailyProviders.map((item) => Number(item.total_tokens))");
+  });
+});
