@@ -59,7 +59,7 @@
 2. 左侧菜单 → **Storage & Databases**（存储和数据库）→ **KV**
    - 旧版界面路径：**Workers & Pages** → 左侧 **KV**
 3. 点击 **Create instance**（旧版：**Create a namespace**）
-4. **Namespace name** 填：`llmflare-CONFIG`
+4. **Namespace name** 填：`llmflare-config`
    - 名字可以随意取，但建议带上 `CONFIG` 便于识别；**绑定名**在代码里写死了是 `CONFIG`，和这里的命名空间名字无关
 5. 点击 **Create / Add**
 6. 创建完成后，回到 KV 列表页，找到刚创建的这一行：
@@ -68,7 +68,7 @@
 ┌──────────────────┬──────────────────────────────────┐
 │ Namespace Name   │ ID                               │
 ├──────────────────┼──────────────────────────────────┤
-│ llmflare-CONFIG  │ 8f3a1c2e9b7d4f60a5c8e1d2b3f4a5c6 │ ← 复制这串
+│ llmflare-config  │ 8f3a1c2e9b7d4f60a5c8e1d2b3f4a5c6 │ ← 复制这串
 └──────────────────┴──────────────────────────────────┘
 ```
 
@@ -560,7 +560,7 @@ location.reload();
 
 **办法二：清空 KV 里的账号重新初始化**
 
-1. Cloudflare → **Storage & Databases** → **KV** → 点进 `llmflare-CONFIG`
+1. Cloudflare → **Storage & Databases** → **KV** → 点进 `llmflare-config`
 2. 在 **KV Pairs** 列表里找到 key 为 `admin:account:v1` 的那条 → 删除
 3. 重新访问 `<WORKER_URL>`，页面会回到「初始化管理员账号」表单，重新建号
 
@@ -892,7 +892,7 @@ wire_api = "responses"
 
 1. Worker → **Settings** → 拉到底 → **Delete** → 输入 Worker 名确认
 2. **Storage & Databases → D1** → `llmflare-usage` → **Settings** → **Delete** → 输入库名确认
-3. **Storage & Databases → KV** → `llmflare-CONFIG` → 删除命名空间
+3. **Storage & Databases → KV** → `llmflare-config` → 删除命名空间
 4. GitHub 仓库按需删除（**Settings → Danger Zone → Delete this repository**）
 
 > 📌 **坑 26**：删除 KV 命名空间会**同时删除所有 Provider 配置和 API Key**，操作不可恢复。删之前先在后台把 Provider 列表导出/截图留档。
