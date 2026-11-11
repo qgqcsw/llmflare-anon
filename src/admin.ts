@@ -4,6 +4,7 @@ import { bearer, error, json, readJson, secureToken, sha256, timingSafeEqual } f
 import { discoverProviderModels, enabledProviderModels, normalizeProviderFreeModels, reconcileEnabledModels } from "./providers";
 import { deleteProviderUsage, getUsageSummary, type UsageQuery } from "./usage";
 import { clientLimitsInputError, normalizeClientLimits } from "./limits";
+import { handleAdminExtensions } from "./admin-extensions";
 import {
   authenticateAdmin,
   bootstrapAvailable,
@@ -105,6 +106,10 @@ export async function handleAdmin(request: Request, env: Env, path: string): Pro
 
   // ---- 以下全部需要登录 ----
   if (!(await authorized(request, env))) return error("管理员凭据无效", 401, "authentication_error");
+
+  // 扩展能力：免费模型 / 模型测试 / 健康度 / 额度 / 路由组（复用上面的会话鉴权）
+  const extension = await handleAdminExtensions(request, env);
+  if (extension) return extension;
 
   if (path === "/admin/auth/me" && request.method === "GET") {
     const identity = await authenticateAdmin(request, env);

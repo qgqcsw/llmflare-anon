@@ -88,6 +88,7 @@ const VIEWS = {
   providers: { title: "AI 提供商", sub: "上游、模型白名单与鉴权方式" },
   keys: { title: "客户端密钥", sub: "网关签发的访问密钥与独立限额" },
   playground: { title: "接口测试", sub: "用客户端密钥验证兼容接口" },
+  extensions: { title: "智能调度", sub: "免费模型筛选、路由组、额度与健康度" },
   settings: { title: "账号安全", sub: "账号信息、密码与接口基址" },
 };
 
@@ -102,6 +103,8 @@ function switchView(name) {
     }
   });
   if (name === "settings") loadMe().catch(() => {});
+  // 通知按需加载的扩展面板：只在进入该视图时才拉数据
+  if (name === "extensions") window.dispatchEvent(new CustomEvent("llm:view", { detail: "extensions" }));
   if (name === "overview" && !lastUsageData) loadUsage().catch((error) => notify(error.message, "bad"));
   window.scrollTo({ top: 0, behavior: "smooth" });
 }

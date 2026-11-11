@@ -18,6 +18,51 @@ export type ProviderType =
  */
 export type ProviderAuthMode = "bearer" | "none";
 
+/**
+ * 提供商级额度策略（对齐上游免费额度，用于调度与故障转移）。
+ * 全部字段可选：历史数据没有该字段时视为「无限制」，无需数据迁移。
+ */
+export interface QuotaPolicy {
+  /** 每分钟请求数上限 */
+  requestsPerMinute?: number;
+  /** 每日请求数上限 */
+  dailyRequests?: number;
+  /** 每月 token 上限 */
+  monthlyTokens?: number;
+  /** 每月请求数上限 */
+  monthlyRequests?: number;
+}
+
+/** 路由调度模式，参考 magpie 的分组策略并扩展两种免费场景 */
+export type RoutingMode = "smart" | "order" | "rotate" | "usage" | "pace" | "free-first" | "cheapest";
+
+export interface RouteMember {
+  providerId: string;
+  /** 留空表示使用该提供商的 defaultModel */
+  model?: string;
+  /** 手动权重，数值越大越优先（smart 模式的平局裁决） */
+  weight?: number;
+}
+
+export interface RouteGroup {
+  id: string;
+  name: string;
+  enabled: boolean;
+  mode: RoutingMode;
+  members: RouteMember[];
+  /** 组内最多尝试多少个成员 */
+  maxAttempts: number;
+  /** 单成员首字节超时（毫秒） */
+  firstByteTimeoutMs: number;
+  /** 是否只允许免费模型 */
+  freeOnly?: boolean;
+}
+
+export interface RouteStoreState {
+  groups: RouteGroup[];
+  defaultGroupId?: string;
+}
+
 export interface Provider {
   id: string;
   name: string;
@@ -30,6 +75,8 @@ export interface Provider {
   freeModels?: string[];
   enabledModels?: string[];
   defaultModel?: string;
+  /** 新增：额度策略，可选，缺失表示不限制 */
+  quota?: QuotaPolicy;
 }
 
 export interface PublicProvider extends Omit<Provider, "apiKey"> { hasApiKey: boolean }
