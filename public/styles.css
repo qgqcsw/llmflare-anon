@@ -166,7 +166,15 @@ html[data-theme="light"] .theme-icon--moon { display: block; }
   box-shadow: 0 8px 26px -10px var(--accent-glow), inset 0 1px 0 var(--btn-inner);
   font-weight: 650;
 }
-.btn--primary:hover { filter: brightness(1.08); box-shadow: 0 12px 32px -10px var(--accent-glow), inset 0 1px 0 var(--btn-inner-2); }
+.btn--primary:hover {
+  /* 必须重新声明 background：基础 .btn:hover 特异性更高，会把渐变替换成玻璃底色，
+     导致浅色主题白底白字、深色主题黑底黑字，按钮文字完全不可见 */
+  background: var(--accent-gradient);
+  border-color: transparent;
+  color: var(--on-accent);
+  filter: brightness(1.08);
+  box-shadow: 0 12px 32px -10px var(--accent-glow), inset 0 1px 0 var(--btn-inner-2);
+}
 
 .btn--soft { background: var(--accent-tint-1); border-color: var(--accent-tint-3); color: var(--accent-ink); }
 .btn--soft:hover { background: var(--accent-tint-2); }
@@ -779,7 +787,7 @@ dialog.sheet > form, dialog.sheet > div { padding: var(--sp-5); display: flex; f
 @media (hover: none) {
   .card:hover { transform: none; }
   .btn:hover { background: var(--glass-fill); }
-  .btn--primary:hover { filter: none; }
+  .btn--primary:hover { background: var(--accent-gradient); filter: none; }
 }
 
 /* 滚动条 */
